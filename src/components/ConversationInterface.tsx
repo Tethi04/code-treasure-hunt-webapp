@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -98,10 +99,12 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
           conversation.startSession({ 
             agentId: "default",
           }).then(() => {
-            conversation.sendTextMessage(response);
+            // Use conversation.say() instead of sendTextMessage
+            conversation.say(response);
           });
         } else {
-          conversation.sendTextMessage(response);
+          // Use conversation.say() for ongoing conversation
+          conversation.say(response);
         }
       }
     }, 1000);
