@@ -98,12 +98,10 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
           conversation.startSession({ 
             agentId: "default",
           }).then(() => {
-            conversation.startSession().then(() => {
-              conversation.send(response);
-            });
+            conversation.send({ text: response });
           });
         } else {
-          conversation.send(response);
+          conversation.send({ text: response });
         }
       }
     }, 1000);
