@@ -120,15 +120,15 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
   };
 
   const generateResponse = (userMessage: string, persona: Persona) => {
-    const responses = [
-      `I remember we used to talk about things like this. Tell me more about what's on your mind.`,
-      `That reminds me of the time we spent together. How have you been lately?`,
-      `I always appreciated these conversations with you. What else would you like to share?`,
-      `If I were still there, I'd probably say something about how much I value our time together.`,
-      `Those are the kinds of thoughts I'd love to hear more about. What else is happening in your life?`,
+    const relationshipBasedResponses = [
+      `As your ${persona.relationship}, I want you to know that I'm here to listen. What else is on your mind?`,
+      `The bond we share as ${persona.relationship} is special. Tell me more about how you're feeling.`,
+      `I've always valued our ${persona.relationship}. Please share what's happening in your life.`,
+      `Being your ${persona.relationship} means a lot to me. I'm here to support you.`,
+      `Our relationship as ${persona.relationship} is precious. Let's talk more about what's concerning you.`
     ];
     
-    return `${responses[Math.floor(Math.random() * responses.length)]}`;
+    return relationshipBasedResponses[Math.floor(Math.random() * relationshipBasedResponses.length)];
   };
 
   return (
