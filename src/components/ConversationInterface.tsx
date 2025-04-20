@@ -48,8 +48,8 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
     overrides: {
       tts: {
         voiceId: "EXAVITQu4vr4xnSDxMaL",
-      },
-    },
+      }
+    }
   });
 
   const { isListening, startListening, stopListening, recognition } = useVoiceInteraction();
@@ -66,7 +66,7 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
         stopListening();
       };
     }
-  }, [recognition]);
+  }, [recognition, stopListening]);
 
   const handleSendMessage = (content: string = inputValue) => {
     if (content.trim() === '') return;
@@ -94,10 +94,15 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
       setLastMessageId(newAiMessage.id);
 
       if (!isMuted) {
-        conversation.startSession({ 
-          agentId: "default",
-          firstMessage: response 
-        });
+        if (!conversation.status) {
+          conversation.startSession({ 
+            agentId: "default",
+          }).then(() => {
+            conversation.sendTextMessage(response);
+          });
+        } else {
+          conversation.sendTextMessage(response);
+        }
       }
     }, 1000);
   };
