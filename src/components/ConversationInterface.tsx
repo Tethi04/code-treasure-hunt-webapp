@@ -1,11 +1,13 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useVoiceInteraction } from '@/hooks/useVoiceInteraction';
+import { VoiceControls } from './VoiceControls';
+import { useConversation } from '@11labs/react';
 
 type Persona = {
   id: string;
@@ -39,38 +41,70 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
   const [feedbackValue, setFeedbackValue] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [lastMessageId, setLastMessageId] = useState<string | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
   const { toast } = useToast();
 
-  const handleSendMessage = () => {
-    if (inputValue.trim() === '') return;
+  const conversation = useConversation({
+    overrides: {
+      tts: {
+        voiceId: "EXAVITQu4vr4xnSDxMaL",
+      },
+    },
+  });
+
+  const { isListening, startListening, stopListening, recognition } = useVoiceInteraction();
+
+  useEffect(() => {
+    if (recognition) {
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInputValue(transcript);
+        handleSendMessage(transcript);
+      };
+
+      recognition.onend = () => {
+        stopListening();
+      };
+    }
+  }, [recognition]);
+
+  const handleSendMessage = (content: string = inputValue) => {
+    if (content.trim() === '') return;
 
     const newUserMessage: Message = {
       id: `user-${Date.now()}`,
-      content: inputValue,
+      content: content,
       isUser: true,
       timestamp: new Date(),
     };
 
-    setMessages([...messages, newUserMessage]);
+    setMessages(prev => [...prev, newUserMessage]);
     setInputValue('');
 
-    // Simulate AI response (in a real app, this would call an API)
     setTimeout(() => {
+      const response = generateResponse(content, persona);
       const newAiMessage: Message = {
         id: `ai-${Date.now()}`,
-        content: generateResponse(inputValue, persona),
+        content: response,
         isUser: false,
         timestamp: new Date(),
       };
-      setMessages(prevMessages => [...prevMessages, newAiMessage]);
+      
+      setMessages(prev => [...prev, newAiMessage]);
       setLastMessageId(newAiMessage.id);
+
+      if (!isMuted) {
+        conversation.startSession({ 
+          agentId: "default",
+          firstMessage: response 
+        });
+      }
     }, 1000);
   };
 
   const handleSubmitFeedback = () => {
     if (feedbackValue.trim() === '') return;
     
-    // In a real app, this would send the feedback to improve the AI model
     toast({
       title: "Feedback Received",
       description: "Thank you for helping improve this Echo's responses.",
@@ -80,7 +114,6 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
     setShowFeedback(false);
   };
 
-  // A very basic response generation function (in a real app, this would use a proper LLM)
   const generateResponse = (userMessage: string, persona: Persona) => {
     const responses = [
       `I remember we used to talk about things like this. Tell me more about what's on your mind.`,
@@ -98,7 +131,13 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
       <CardHeader className="border-b pb-2">
         <CardTitle className="flex items-center justify-between">
           <span>Conversation with {persona.name}</span>
-          <span className="text-sm text-muted-foreground">{persona.relationship}</span>
+          <VoiceControls
+            isListening={isListening}
+            isSpeaking={conversation.isSpeaking}
+            onStartListening={startListening}
+            onStopListening={stopListening}
+            onToggleMute={() => setIsMuted(!isMuted)}
+          />
         </CardTitle>
         <CardDescription>
           This is an AI-generated conversation based on your memories
@@ -166,7 +205,7 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
       <CardFooter className="border-t p-4">
         <div className="flex w-full gap-2">
           <Input
-            placeholder="Type your message..."
+            placeholder="Type your message or click the microphone to speak..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => {
@@ -177,7 +216,7 @@ export const ConversationInterface: React.FC<ConversationInterfaceProps> = ({ pe
             }}
             className="flex-grow"
           />
-          <Button onClick={handleSendMessage}>Send</Button>
+          <Button onClick={() => handleSendMessage()}>Send</Button>
         </div>
       </CardFooter>
     </Card>
